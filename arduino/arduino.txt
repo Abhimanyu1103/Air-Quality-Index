@@ -1,0 +1,58 @@
+#include <SPI.h>
+#include <Wire.h>
+#include <DHT.h>
+
+#define SENSOR A0            // MQ135 analog pin
+#define DHTPIN 5             // DHT11 pin
+#define DHTTYPE DHT11
+DHT dht(DHTPIN, DHTTYPE);
+
+int gasRaw = 0;
+
+void sendSensor()
+{
+  float h = dht.readHumidity();
+  float t = dht.readTemperature();
+
+  if (isnan(h) || isnan(t))
+  {
+    Serial.println("{\"error\":\"Failed to read DHT sensor!\"}");
+    return;
+  }
+
+  float voltage = gasRaw * (5.0 / 1023.0); // Convert analog reading to voltage
+
+  // Estimate CO2 and Methane (for demo purposes only)
+  float estimatedCO2 = voltage * 1000;     // Simple estimate, not accurate
+  float estimatedCH4 = voltage * 500;      // Simple estimate, not accurate
+
+  Serial.print("{\"temperature\":");
+  Serial.print(t);
+  Serial.print(",\"humidity\":");
+  Serial.print(h);
+  Serial.print(",\"co2\":");
+  Serial.print(estimatedCO2);
+  Serial.print(",\"methane\":");
+  Serial.print(estimatedCH4);
+  Serial.println("}");
+}
+
+void air_sensor()
+{
+  gasRaw = analogRead(SENSOR);
+}
+
+void setup()
+{
+  Serial.begin(9600);
+  pinMode(SENSOR, INPUT);
+  dht.begin();
+}
+
+void loop()
+{
+  air_sensor();
+  sendSensor();
+  delay(2000); // 2 second delay
+}
+
